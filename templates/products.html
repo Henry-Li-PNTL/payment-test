@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商品列表</title>
+</head>
+<body>
+
+    {% for item in items %}
+
+        <form method="POST" action="/shop/products/{{item.name}}" class="product", style="margin: 1rem; padding: .5rem; background-color: #838383; width: 30%;">
+            <div class="name"> {{item.name}} <br></div>
+            <div class="price"> {{item.price}} </div>
+            <button id="xd" type="button">購買</button>
+        </div>
+
+
+        <div id="payment-block" style="width: 100%; height: 50%;"></div>
+    {% endfor %}
+
+
+
+    <script src="https://js.stripe.com/v3/"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", ()=>{
+            // /shop/products/{{item.name}}
+            url = "/shop/products/{{item.name}}"
+
+            document.getElementById("xd").addEventListener("click", async ()=>{
+                
+                const items = [{ id: "xl-tshirt" }];
+
+                const stripe = Stripe("pk_test_51OZTUEBFkLqjc7QTAKIxGfRBiU9EEzFHZg5HcBHqPkjThhWaMTLRIywPVB8uqdF8lhKEItcoB90e3Y5giKYqW6ra0036HnKOti");
+                    
+                const response = await fetch("/shop/products/{{items.0.name}}", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ items }),
+                });
+                const { clientSecret } = await response.json();
+
+                const appearance = {
+                    theme: 'night',
+                };
+                elements = stripe.elements({ appearance, clientSecret });
+
+                const paymentElementOptions = {
+                    layout: "tabs",
+                };
+
+                const paymentElement = elements.create("payment", paymentElementOptions);
+                paymentElement.mount("#payment-block");
+
+
+            })
+
+        })
+    </script>
+</body>
+</html>
