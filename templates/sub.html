@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商品列表</title>
+</head>
+<body>
+
+    <div class="product", style="border-radius: 8px; margin: 1rem; padding: .5rem; background-color: rgb(146, 183, 228); width: 30%;">
+        <div class="name"> {{product.name}} <br></div>
+        <div class="price"> {{product.price}} </div>
+        <input type="hidden" name="lookup_key" value="drink_milk_every_day" />
+        <button id="subme" >訂閱產品</button>
+
+        <a href="" id="xddd"></a>
+    </div>
+
+    <script src="https://js.stripe.com/v3/"></script>
+    <script>
+
+        let elements;
+        const stripe = Stripe("pk_test_51OZTUEBFkLqjc7QTAKIxGfRBiU9EEzFHZg5HcBHqPkjThhWaMTLRIywPVB8uqdF8lhKEItcoB90e3Y5giKYqW6ra0036HnKOti");
+
+        async function Subscription(){
+            const response = await fetch("/shop/subscription/{{product.name}}", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ 
+                    lookup_key: "drink_milk_every_day",
+
+                }),
+            });
+            const data = await response.json();
+
+            console.log(data)
+
+            document.getElementById("xddd").innerHTML = data.redirect
+            document.getElementById("xddd").href = data.redirect
+
+            window.location = data.redirect
+
+             
+
+        }
+
+        document.addEventListener("DOMContentLoaded", async () => {
+
+            document.getElementById("subme").onclick = async () => {
+                await Subscription()
+            }
+
+
+        })
+    </script>
+</body>
+</html>

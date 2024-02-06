@@ -8,52 +8,92 @@
 <body>
 
     {% for item in items %}
-
-        <form method="POST" action="/shop/products/{{item.name}}" class="product", style="margin: 1rem; padding: .5rem; background-color: #838383; width: 30%;">
+        <div class="product", style="margin: 1rem; padding: .5rem; background-color: rgb(206, 197, 197); width: 30%;">
             <div class="name"> {{item.name}} <br></div>
             <div class="price"> {{item.price}} </div>
-            <button id="xd" type="button">購買</button>
         </div>
-
-
-        <div id="payment-block" style="width: 100%; height: 50%;"></div>
     {% endfor %}
+    <div id="payment-block" style="width: 50%; height: 50%;"></div>
+    <button id="pay">買下去付款</button>
+
+
+    <hr>
+    <h1>訂閱！</h1>
+    <button id="subscription">買下去付款</button>
 
 
 
     <script src="https://js.stripe.com/v3/"></script>
+    <!-- <script src="/static/stripe.js"></script> -->
     <script>
-        document.addEventListener("DOMContentLoaded", ()=>{
+
+        let elements;
+        const stripe = Stripe("pk_test_51OZTUEBFkLqjc7QTAKIxGfRBiU9EEzFHZg5HcBHqPkjThhWaMTLRIywPVB8uqdF8lhKEItcoB90e3Y5giKYqW6ra0036HnKOti");
+
+        async function Subscription(){
+
+        }
+        
+        async function Purchase() {
+            const { error } = await stripe.confirmPayment({
+                elements,
+                confirmParams: {
+                    // Make sure to change this to your payment completion page
+                    return_url: "http://localhost:8000/shop/success",
+                },
+            });
+
+            // This point will only be reached if there is an immediate error when
+            // confirming the payment. Otherwise, your customer will be redirected to
+            // your `return_url`. For some payment methods like iDEAL, your customer will
+            // be redirected to an intermediate site first to authorize the payment, then
+            // redirected to the `return_url`.
+            if (error.type === "card_error" || error.type === "validation_error") {
+                console.error(error.message);
+            } else {
+                console.error("An unexpected error occurred.");
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", async ()=>{
             // /shop/products/{{item.name}}
             url = "/shop/products/{{item.name}}"
 
-            document.getElementById("xd").addEventListener("click", async ()=>{
+
+            const items = [{ id: "xl-tshirt" }];
+
                 
-                const items = [{ id: "xl-tshirt" }];
+            const response = await fetch("/shop/products/{{items.0.name}}", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ items }),
+            });
+            const { clientSecret } = await response.json();
 
-                const stripe = Stripe("pk_test_51OZTUEBFkLqjc7QTAKIxGfRBiU9EEzFHZg5HcBHqPkjThhWaMTLRIywPVB8uqdF8lhKEItcoB90e3Y5giKYqW6ra0036HnKOti");
-                    
-                const response = await fetch("/shop/products/{{items.0.name}}", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ items }),
-                });
-                const { clientSecret } = await response.json();
+            const appearance = {
+                theme: 'night',
+            };
+            elements = stripe.elements({ appearance, clientSecret });
 
-                const appearance = {
-                    theme: 'night',
-                };
-                elements = stripe.elements({ appearance, clientSecret });
+            const paymentElementOptions = {
+                layout: "tabs",
+            };
 
-                const paymentElementOptions = {
-                    layout: "tabs",
-                };
-
-                const paymentElement = elements.create("payment", paymentElementOptions);
-                paymentElement.mount("#payment-block");
+            const paymentElement = elements.create("payment", paymentElementOptions);
+            paymentElement.mount("#payment-block");
 
 
+
+            document.getElementById("pay").addEventListener("click", async ()=>{
+                await Purchase()
             })
+
+
+            document.getElementById("subscription").addEventListener("click", async ()=>{
+                await Subscription()
+            })
+
+            
 
         })
     </script>
