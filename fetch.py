@@ -34,3 +34,9 @@ print("Card Brand:", payment_method.card.brand)
 print("Last 4:", payment_method.card.last4)
 print("Exp Month:", payment_method.card.exp_month)
 print("Exp Year:", payment_method.card.exp_year)
+
+
+
+invoices = stripe.Invoice.list(customer='cus_xxx')
+for invoice in invoices.auto_paging_iter():
+    print(invoice)

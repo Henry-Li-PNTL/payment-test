@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>商品列表</title>
+</head>
+<body>
+
+    <div style="background-color: #ccc; width: 50vw;">
+        
+        <div id="card-element">
+            <!-- Stripe的Elements将会被挂载在这里 -->
+        </div>
+        
+        <button id="submit">提交支付信息</button>
+    </div>
+
+    <br>
+
+    <div style="background-color: #ccc; width: 50vw;">
+        <div id="cardcvc-element">
+            <!-- Stripe的Elements将会被挂载在这里 -->
+        </div>
+    </div>
+
+    
+
+
+
+    
+    <script src="https://js.stripe.com/v3/"></script>
+    <script>
+
+        let elements;
+        const stripe = Stripe("pk_test_51OZTUEBFkLqjc7QTAKIxGfRBiU9EEzFHZg5HcBHqPkjThhWaMTLRIywPVB8uqdF8lhKEItcoB90e3Y5giKYqW6ra0036HnKOti");
+        // CLIENT_SECRET = "pk_test_51OZTUEBFkLqjc7QTAKIxGfRBiU9EEzFHZg5HcBHqPkjThhWaMTLRIywPVB8uqdF8lhKEItcoB90e3Y5giKYqW6ra0036HnKOti"
+
+        elements = stripe.elements();
+        var card = elements.create('card');
+        card.mount('#card-element');
+
+        elements = stripe.elements();
+        var cardcvc = elements.create('payment');
+        cardcvc.mount('#cardcvc-element');
+
+        document.getElementById('submit').addEventListener('click', function(e) {
+            stripe.createPaymentMethod({
+                type: 'card',
+                card: card,
+            }).then(function(result) {
+                if (result.error) {
+                    console.log(result.error.message);
+                } else {
+                    // 发送result.paymentMethod.id到你的服务器
+                    fetch('/shop/attach', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({paymentMethodId: result.paymentMethod.id}),
+                    });
+                }
+            });
+        });
+    </script>
+</body>
+</html>

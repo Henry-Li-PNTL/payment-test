@@ -105,6 +105,21 @@ class Subscription(View):
         })
 
 @method_decorator(csrf_exempt, name='dispatch')
+class AttachPaymentMethod(View):
+    def get(self, request, *args, **kwargs):
+        return render(request, "attach-payment.html", context={})
+    
+    def post(self, request, *args, **kwargs): 
+
+        data = json.loads(request.body)
+
+        print(data["paymentMethodId"])
+
+        
+        return JsonResponse({
+        })
+
+@method_decorator(csrf_exempt, name='dispatch')
 class Webhook(View):
 
     def post(self, request, *args, **kwargs):
