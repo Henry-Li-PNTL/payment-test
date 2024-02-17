@@ -11,6 +11,25 @@ stripe.api_key = "sk_test_51OZTUEBFkLqjc7QTFXwxu3Me4oCgklY5DLs5jqAUEkYky5e4VBfyA
 me = stripe.Customer.retrieve("cus_PZV6GO3wuec92B")
 print(me)
 
+xxxx = stripe.InvoiceItem.create(
+    customer=me.stripe_id,
+    amount=int(14.2 * 100),  # 轉換為最小貨幣單位
+    currency='usd',
+    description=f"Subscription for remaining days of month"
+)
+
+subscription = stripe.Subscription.create(
+    customer=me.stripe_id,
+    items=[{
+        'price': 'price_1OetlBBFkLqjc7QTKBD9TDFO',  # 每月300元的定价ID
+    }],
+    add_invoice_items=[xxxx.stripe_id],
+    # 可以设置其他订阅参数，如试用期等
+)
+
+
+subscription
+
 # # 创建订阅时添加一次性费用
 # subscription = stripe.Subscription.create(
 #     customer=me.stripe_id,
