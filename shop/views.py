@@ -1,5 +1,7 @@
 import stripe
 import json
+import datetime
+import random
 
 from django.http import JsonResponse
 from django.shortcuts import  render
@@ -16,6 +18,28 @@ endpoint_secret = 'whsec_c1913c50279be0efc5735f4989769d58dbfc4ef3971b244ff61524c
 secret_key = "sk_test_51OZTUEBFkLqjc7QTFXwxu3Me4oCgklY5DLs5jqAUEkYky5e4VBfyAE5FHpp99Kc8RUqOlxvoHGDRtDHOJAnhFvGJ00YkqrxM0U"
 
 stripe.api_key = secret_key
+
+
+
+def get_next_month_timestamp(next_day: int) -> int: 
+    ## 當前日期
+    now = datetime.datetime.now()
+
+    # 如果當前日期已經超過這個月的15號，則找下個月的15號
+    if now.day > next_day:
+        # 下個月的年份和月份
+        next_month_year = now.year + (1 if now.month == 12 else 0)
+        next_month = 1 if now.month == 12 else now.month + 1
+
+        # 下個月的15號
+        next_15th = datetime.datetime(next_month_year, next_month, next_day)
+    else:
+        # 這個月的15號
+        next_15th = datetime.datetime(now.year, now.month, next_day)
+
+    # 轉換為timestamp int
+    next_15th_timestamp = int(next_15th.timestamp())
+    return next_15th_timestamp
 
 @method_decorator(csrf_exempt, name='dispatch')
 class Products(View):
@@ -63,7 +87,6 @@ class Buy(View):
             'clientSecret': intent['client_secret']
         })
     
-
 @method_decorator(csrf_exempt, name='dispatch')
 class Subscription(View):
     def get(self, request, product_name: str, *args, **kwargs):
@@ -85,17 +108,60 @@ class Subscription(View):
 
         DOMAIN = "http://127.0.0.1:8000"
 
+
+
+        milk_every_day_10usd = "price_1OetlBBFkLqjc7QTKBD9TDFO"
+        henry_customer_id = "cus_PZV6GO3wuec92B"
+
+        me = stripe.Customer.retrieve(henry_customer_id)
+        randint = random.randint(10, 30)
+        print(f"這次付款的比率是: {randint}")
+
+        invoice_item = stripe.InvoiceItem.create(
+            customer=me.stripe_id,
+            amount=int( randint * 100),  # 轉換為最小貨幣單位
+            currency='usd',
+            description=f"Subscription for remaining days of month"
+        )
+
+
+        single_day_fee_product = "prod_Paxo32goteCcK3"
+        milk_every_month_100usd = "price_1OlShNBFkLqjc7QTcBirlV2I"
+
+
+        formal_every_month = "price_1OllxWBFkLqjc7QT6cQwKxLo"
+
+        idp_key = f"omg-mooo-{random.randint(1, 10000000)}"
         checkout_session = stripe.checkout.Session.create(
+            stripe_account=me.stripe_account,
+            customer_email=me.email,
+            idempotency_key=f"omg-mooo-{random.randint(1, 10000000)}",
             line_items=[
                 {
-                    'price': prices.data[0].id,
+                    'price': formal_every_month,
                     'quantity': 1,
                 },
+                {
+                    'price_data': { # 一次性費用的定義
+                        'currency': 'usd',
+                        'product_data': {
+                            'name': '當月剩餘天數所需費用',
+                            # 'name': 'Charge for the Remaining Days of the Month',
+                        },
+                        'unit_amount': 15, # 一次性費用的金額，例如 $15.00 USD
+                    },
+                    'quantity': 10,
+                }
             ],
             mode='subscription',
             subscription_data={
-                "trial_period_days": 2
+                "trial_period_days": 25 - datetime.datetime.now().day,
+                # "billing_cycle_anchor": get_next_month_timestamp(25),
+                # "billing_cycle_anchor": int(round( (datetime.datetime.now() + datetime.timedelta(days=5)).timestamp() )),
+                "description": "YOOOOO - " + idp_key
             },
+            billing_address_collection="required",
+            phone_number_collection={"enabled": True},
             success_url=f"{DOMAIN}/shop/success" + "?session_id={CHECKOUT_SESSION_ID}",
             cancel_url= f"{DOMAIN}/shop/cancel",
         )
@@ -142,7 +208,29 @@ class Webhook(View):
         print(f"處理 {event['type']} 事件中...!")
         # Handle the event
         if event['type'] == 'payment_intent.succeeded':
-          payment_intent = event['data']['object']
+            payment_intent = event['data']['object']
+        if event['type'] == 'invoice.payment_succeeded':
+            print("Yoooooooo ---------------- !!!!!!!!!!!!!!!!!!!")
+            print(event)
+
+            subscription_id = event["data"]["object"]["subscription"]
+            sub = stripe.Subscription.retrieve(event["data"]["object"]["subscription"])
+            invoices = stripe.Invoice.list(subscription=event["data"]["object"]["subscription"])
+            for x in invoices.auto_paging_iter():
+                print(x)
+
+
+
+            print("------", len(list(invoices.auto_paging_iter())) )
+            if len(list(invoices.auto_paging_iter())) == 6:
+                trial_end = datetime.datetime.now() + datetime.timedelta(days=180)  # 例如，180天后
+                updated_subscription = stripe.Subscription.modify(
+                subscription_id,
+                trial_end=int(trial_end.timestamp()),
+                )
+
+
+            print(dir(x)) 
         # ... handle other event types
         # else:
         #     print('Unhandled event type {}'.format(event['type']))
