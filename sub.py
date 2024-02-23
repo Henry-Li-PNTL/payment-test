@@ -71,14 +71,14 @@ print(me)
 # )
 
 
-randint = random.randint(10, 30)
-print(f"這次付款的比率是: {randint}")
-invoice_item = stripe.InvoiceItem.create(
-    customer=me.stripe_id,
-    amount=int( randint * 100),  # 轉換為最小貨幣單位
-    currency='usd',
-    description=f"額外買牛奶 - {datetime.datetime.now().strftime('%m%d-%H%M')}"
-)
+# randint = random.randint(10, 30)
+# print(f"這次付款的比率是: {randint}")
+# invoice_item = stripe.InvoiceItem.create(
+#     customer=me.stripe_id,
+#     amount=int( randint * 100),  # 轉換為最小貨幣單位
+#     currency='usd',
+#     description=f"額外買牛奶 - {datetime.datetime.now().strftime('%m%d-%H%M')}"
+# )
 
 # subscription = stripe.Subscription.create(
 #     customer=me.stripe_id,
@@ -117,7 +117,7 @@ checkout_session = stripe.checkout.Session.create(
             mode='subscription',
             subscription_data={
                 # "trial_period_days": 2,
-                "billing_cycle_anchor": get_next_month_timestamp(25),
+                "billing_cycle_anchor": get_next_month_timestamp(1),
                 # "billing_cycle_anchor": int(round( (datetime.datetime.now() + datetime.timedelta(days=5)).timestamp() )),
                 "description": "YOOOOO - " + idp_key
             },

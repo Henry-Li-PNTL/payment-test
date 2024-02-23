@@ -179,7 +179,7 @@ class AttachPaymentMethod(View):
 
         data = json.loads(request.body)
 
-        print(data["paymentMethodId"])
+        # print(data["paymentMethodId"])
 
         
         return JsonResponse({
@@ -211,26 +211,26 @@ class Webhook(View):
             payment_intent = event['data']['object']
         if event['type'] == 'invoice.payment_succeeded':
             print("Yoooooooo ---------------- !!!!!!!!!!!!!!!!!!!")
-            print(event)
+            # print(event)
 
             subscription_id = event["data"]["object"]["subscription"]
             sub = stripe.Subscription.retrieve(event["data"]["object"]["subscription"])
-            invoices = stripe.Invoice.list(subscription=event["data"]["object"]["subscription"])
-            for x in invoices.auto_paging_iter():
-                print(x)
+            # invoices = stripe.Invoice.list(subscription=event["data"]["object"]["subscription"])
+            # for x in invoices.auto_paging_iter():
+            #     print(x)
 
 
 
-            print("------", len(list(invoices.auto_paging_iter())) )
-            if len(list(invoices.auto_paging_iter())) == 6:
-                trial_end = datetime.datetime.now() + datetime.timedelta(days=180)  # 例如，180天后
-                updated_subscription = stripe.Subscription.modify(
-                subscription_id,
-                trial_end=int(trial_end.timestamp()),
-                )
+            # print("------", len(list(invoices.auto_paging_iter())) )
+            # if len(list(invoices.auto_paging_iter())) == 6:
+            #     trial_end = datetime.datetime.now() + datetime.timedelta(days=180)  # 例如，180天后
+            #     updated_subscription = stripe.Subscription.modify(
+            #     subscription_id,
+            #     trial_end=int(trial_end.timestamp()),
+            #     )
 
 
-            print(dir(x)) 
+            # print(dir(x)) 
         # ... handle other event types
         # else:
         #     print('Unhandled event type {}'.format(event['type']))

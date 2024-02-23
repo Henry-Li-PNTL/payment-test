@@ -1,0 +1,51 @@
+
+
+處理 invoiceitem.created 事件中...!
+處理 payment_method.attached 事件中...!
+處理 customer.created 事件中...!
+處理 customer.updated 事件中...!
+處理 customer.subscription.created 事件中...!
+處理 customer.subscription.updated 事件中...!
+處理 payment_intent.succeeded 事件中...!
+處理 payment_intent.created 事件中...!
+處理 invoice.created 事件中...!
+處理 invoice.finalized 事件中...!
+處理 charge.succeeded 事件中...!
+處理 invoice.updated 事件中...!
+處理 invoice.paid 事件中...!
+處理 invoice.payment_succeeded 事件中...!
+
+處理 invoiceitem.created 事件中...!
+處理 checkout.session.completed 事件中...!
+
+
+
+
+
+
+
+
+
+============= 乾淨 ====================
+
+
+處理 payment_method.attached 事件中...!
+處理 customer.created 事件中...!
+處理 customer.updated 事件中...!
+
+處理 customer.subscription.created 事件中...!
+處理 customer.subscription.updated 事件中...!
+處理 payment_intent.succeeded 事件中...!
+處理 payment_intent.created 事件中...!
+處理 invoice.created 事件中...!
+處理 invoice.finalized 事件中...!
+處理 charge.succeeded 事件中...!
+處理 invoice.updated 事件中...!
+處理 invoice.paid 事件中...!
+處理 invoice.payment_succeeded 事件中...!
+處理 invoiceitem.created 事件中...!
+處理 checkout.session.completed 事件中...!
+
+
+invoice.payment_failed
+invoice.payment_succeeded
