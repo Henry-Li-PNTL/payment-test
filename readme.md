@@ -118,6 +118,72 @@ invoice.payment_failed
 invoice.payment_succeeded
 customer.subscription.deleted
 
+
+---
+
+# UML Class Diagram
+
+```mermaid
+
+classDiagram
+
+    direction TB
+
+    PaymentService <|-- StripePaymentService
+
+    StateBase <|-- SubscriptionCreatedState
+    StateBase <|-- InvoiceCreatedState
+    StateBase <|-- PaymentFailedState
+    StateBase <|-- PaymentPaidState
+    StateBase <|-- SubscriptionDeletedState
+
+    EventHandler <|-- SubscriptionCreatedEventHandler
+    EventHandler <|-- InvoiceCreatedEventHandler 
+    EventHandler <|-- PaymentFailedEventHandler
+    EventHandler <|-- PaymentPaidEventHandler
+    EventHandler <|-- SubscriptionDeleted
+
+    EventHandler <.. EventDispatcher
+    PaymentService <.. EventHandler
+
+    class PaymentService {
+        <<interface>>
+        +GetCustomer()
+        +CreateCustomer()
+        +GetSubscription()
+        +CreateSubscription()
+        +GetInvoice()
+        +GetInvoicesList()
+        +CreateInvoice()
+    }
+
+    class StripePaymentService { }
+
+    class StateBase {
+        <<interface>>
+        + from_event(event: dict) Self
+    }
+    class SubscriptionCreatedState { }
+    class InvoiceCreatedState { }
+    class PaymentFailedState { }
+    class PaymentPaidState { }
+    class SubscriptionDeletedState { }
+
+
+    class EventHandler {
+        <<interface>>
+        +handle_event(event: Type~EventBase~)
+    }
+
+    class EventDispatcher {
+        + handlers
+
+        +register_handler(event, handler: Type~EventHandler~)
+        +dispatch_event(event)
+    }
+```
+
+
 ---
 
 ```mermai
