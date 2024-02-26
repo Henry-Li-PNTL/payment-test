@@ -217,3 +217,21 @@ sequenceDiagram
         end
     end
 ```
+
+
+
+---
+
+之後要 publish 到 pare-eventing 的時候要放 token
+因此要嘛用前端帶的 access_token 要嘛用 jwt_issuerl.issue 產的 token
+
+
+這邊可以看到 jwt_issuer.issue 發 token 的方法
+payload 裡面目前隨便放也都可以
+/Users/henryli/coding/pentiumnetwork/mavis-auto-platform/mavis-auto/modules/events/api/endpoint.py
+
+這邊定義了 jwt_issuer 被 container provider 實體化的地方
+/Users/henryli/coding/pentiumnetwork/mavis-auto-platform/mavis-auto/application/containers/shared_mod.py
+
+這邊定義了 pare_eventing_svc.publish 的方法
+/Users/henryli/coding/pentiumnetwork/mavis-auto-platform/mavis-auto/modules/events/domain/infra/pare_eventing_service.py
