@@ -104,12 +104,12 @@ stateDiagram-v2
     SubscriptionDeleted --> [*]
 ```
 
-RAPD Events:
-SubscriptionCreated
-InvoiceCreated
-PaymentPaid
-PaymentFailed
-SubscriptionDeleted
+RAPD Events:  
+SubscriptionCreated  
+InvoiceCreated  
+PaymentPaid  
+PaymentFailed  
+SubscriptionDeleted  
 
 Stripe Events:
 customer.subscrption.created
@@ -129,6 +129,8 @@ classDiagram
 
     direction TB
 
+    %%%%%%% 關係定義
+
     PaymentService <|-- StripePaymentService
 
     StateBase <|-- SubscriptionCreatedState
@@ -137,15 +139,35 @@ classDiagram
     StateBase <|-- PaymentPaidState
     StateBase <|-- SubscriptionDeletedState
 
-    EventHandler <|-- SubscriptionCreatedEventHandler
-    EventHandler <|-- InvoiceCreatedEventHandler 
-    EventHandler <|-- PaymentFailedEventHandler
-    EventHandler <|-- PaymentPaidEventHandler
-    EventHandler <|-- SubscriptionDeleted
 
-    EventHandler <.. EventDispatcher
-    PaymentService <.. EventHandler
+    StateTransitEvent <|-- CustomerSubscriptionCreatedEvent
+    StateTransitEvent <|-- InvoiceCreatedEvent
+    StateTransitEvent <|-- ChargeSucceededEvent
+    StateTransitEvent <|-- InvoicePaymentFailedEvent
+    StateTransitEvent <|-- InvoicePaymentSucceededEvent
 
+
+    EventHandler <|-- CustomerSubscriptionCreatedStrategy
+    EventHandler <|-- InvoiceCreatedStrategy
+    EventHandler <|-- ChargeSucceededStrategy
+    EventHandler <|-- InvoicePaymentFailedStrategy
+    EventHandler <|-- InvoicePaymentSucceededStrategy
+
+    EventHandler o-- DababaseService
+    EventHandler o-- PareEventingService
+    EventHandler o-- JWTIssuer
+    EventHandler *-- CloudEvent
+    
+    StripePaymentService o-- DababaseService
+    StripePaymentService o-- StateRegistry
+    StateRegistry *-- StateBase
+    StateBase *-- EventHandler
+    StateBase *-- StateTransitEvent
+    
+
+
+    %%%%%%% 物件定義
+    
     class PaymentService {
         <<interface>>
         +GetCustomer()
@@ -159,9 +181,29 @@ classDiagram
 
     class StripePaymentService { }
 
+    class StateRegistry {
+        -handled_states
+        +__getitem__()
+        +__setitem__()
+    }
+
+
+    %% Event Handler： 封裝了怎麼處理該次 Event 的發生
+    class EventHandler { 
+        <<interface>>
+        -handled_states
+        +handle_event(event: Type~EventBase~)
+    }
+    class CustomerSubscriptionCreatedStrategy { }
+    class InvoiceCreatedStrategy { }
+    class ChargeSucceededStrategy { }
+    class InvoicePaymentFailedStrategy { }
+    class InvoicePaymentSucceededStrategy { }
+
+
     class StateBase {
         <<interface>>
-        + from_event(event: dict) Self
+        +from_event(event: dict) Self
     }
     class SubscriptionCreatedState { }
     class InvoiceCreatedState { }
@@ -170,19 +212,43 @@ classDiagram
     class SubscriptionDeletedState { }
 
 
-    class EventHandler {
-        <<interface>>
-        +handle_event(event: Type~EventBase~)
+    %% 這些都是 Stripe Event Dataclass，會導致訂閱的狀態轉換
+    class StateTransitEvent {
+        <<Abstract>>
+        +from_event(raw_event: dict)
+    }
+    class CustomerSubscriptionCreatedEvent { }
+    class InvoiceCreatedEvent { }
+    class ChargeSucceededEvent { }
+    class InvoicePaymentFailedEvent { }
+    class InvoicePaymentSucceededEvent { }
+
+    %% 用於資料庫存放的字串
+    class StateEnum {
+        <<Enumeration>>
+        SubscriptionCreated
+        InvoiceCreated
+        PaymentFailed
+        PaymentPaid
+        SubscriptionDeleted
     }
 
+
+    %% 原本就存在的物件
+    %% Container 中的 SharedContainer 中的 database
+    class DababaseService { }
+    class PareEventingService { }
+    class CloudEvent { }
+    class JWTIssuer { }
+
+```
+<!-- 
     class EventDispatcher {
         + handlers
 
         +register_handler(event, handler: Type~EventHandler~)
         +dispatch_event(event)
-    }
-```
-
+    } -->
 
 ---
 
