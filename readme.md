@@ -136,88 +136,119 @@ customer.subscription.deleted
 # UML Class Diagram
 
 ```mermaid
-
 classDiagram
 
-    direction TB
+    direction LR
 
     %%%%%%% 關係定義
 
     PaymentService <|-- StripePaymentService
+    PaymentRepository <|-- StripePaymentRepository
 
-    StateBase <|-- SubscriptionCreatedState
-    StateBase <|-- InvoiceCreatedState
-    StateBase <|-- PaymentFailedState
-    StateBase <|-- PaymentPaidState
-    StateBase <|-- SubscriptionDeletedState
 
-    EventHandler o-- DababaseService
-    EventHandler o-- PareEventingService
-    EventHandler o-- JWTIssuer
-    EventHandler *-- CloudEvent
-    
+    BaseState <|-- InitialState
+    BaseState <|-- SubscriptionCreatedState
+    BaseState <|-- InvoiceCreatedState
+    BaseState <|-- PaymentPaidState
+    BaseState <|-- PaymentFailedState
+    BaseState <|-- SubscriptionCancaledState
+    BaseState <|-- SubscriptionDeletedState
+
+    InitialState <|-- StripeInitialState
+    SubscriptionCreatedState <|-- StripeSubscriptionCreatedState
+    InvoiceCreatedState <|-- StripeInvoiceCreatedState
+    PaymentPaidState <|-- StripePaymentPaidState
+    PaymentFailedState <|-- StripePaymentFailedState
+    SubscriptionCancaledState <|-- StripeSubscriptionCancaledState
+    SubscriptionDeletedState <|-- StripeSubscriptionDeletedState
+
+    StripePaymentService o-- PaymentRepository
     StripePaymentService o-- DababaseService
-    StripePaymentService o-- StateRegistry
-    
+    StripePaymentService o-- PareEventingService
+    StripePaymentService o-- redis_cached_storage
+    StripePaymentService o-- JWTIssuer
+    StripePaymentService o-- StateMachineAbstract
+    StateMachineAbstract o-- BaseState
+    StripePaymentService *-- CloudEvent
+
+    BaseState o-- PaymentRepository
+    BaseState o-- DababaseService
+    BaseState o-- PareEventingService
+    BaseState o-- redis_cached_storage
+
 
 
     %%%%%%% 物件定義
 
-    %% 負責處理 Payment Webhook 事件的物件
-    class PaymentGatewayWebhookHandler {
-        <<interface>>
-        +handle_webhook(event: Dict)
+    class StateMachineAbstract {
+        __state
+
+        -get_state_obj()
+        +handle_event()
+        +inject()
     }
 
-    %% 負責處理與 Payment Service Provider 溝通的實際服務 ( infra 層的 )
     class PaymentRepository {
         <<interface>>
-        +GetCustomer()
-        +CreateCustomer()
-        +GetSubscription()
-        +CreateSubscription()
-        +GetInvoice(invoice_id: str)
-        +GetInvoicesList()
-        +CreateInvoice()
+        +get_next_period_first_day()
+        +get_customer()
+        +create_customer()
+        +get_subscription()
+        +get_price_item()
+        +create_customer_portal_configuration()
+        +create_customer_portal()
+        +create_payment_link()
+        +create_product()
+        +create_price_for_product()
     }
-    class StripePaymentRepository {
-        +GetCustomerPortalURL()
-        +CreateCustomerPortalURL()
-    }
+    class StripePaymentRepository { }
 
-
-
-    class StateMachine {
-        -handled_states: dict[str, StateBase]
-        +handle_event(event: Dict)
-    }
-
-
-    class StateBase {
+    class PaymentService {
         <<interface>>
-        +handle_event(event: Dict)
+        +handle_webhook_event()
+        +get_customer_billing_portal()
+        +create_checkout_url()
+        +create_customer()
+        +create_product()
+        +create_priceplan_for_product()
+        +create_product()
+        +create_priceplan_for_product()
     }
-    class StripeSubscriptionCreatedState {
-        +invoice_created()
+    class StripePaymentService { }
+
+
+    class BaseState {
+        <<interface>>
+        -payment_repo
+        -database
+        -event_services
+        -redis_cache_storage
+
+        +handle()
+        +get_event_register(event: dict) Self
     }
-    class StripeInvoiceCreatedState {
-        +invoice_payment_failed()
-        +invoice_payment_succeeded()
-    }
-    class StripePaymentFailedState {
-        +invoice_payment_failed()
-        +invoice_payment_succeeded()
-    }
-    class StripePaymentPaidState {
-        +invoice_created()
-        +customer_subscription_deleted()
-    }
+    class InitialState { }
+    class SubscriptionCreatedState { }
+    class InvoiceCreatedState { }
+    class PaymentPaidState { }
+    class PaymentFailedState { }
+    class SubscriptionCancaledState { }
+    class SubscriptionDeletedState { }
+
+    class StripeInitialState { }
+    class StripeSubscriptionCreatedState { }
+    class StripeInvoiceCreatedState { }
+    class StripePaymentPaidState { }
+    class StripePaymentFailedState { }
+    class StripeSubscriptionCancaledState { }
     class StripeSubscriptionDeletedState { }
 
 
 
+
+
     %% 用於資料庫存放的字串
-    class StateEnum {
+    class PaymentTransactionState {
         <<Enumeration>>
         SubscriptionCreated
         InvoiceCreated
@@ -231,9 +262,9 @@ classDiagram
     %% Container 中的 SharedContainer 中的 database
     class DababaseService { }
     class PareEventingService { }
+    class redis_cached_storage { }
     class CloudEvent { }
     class JWTIssuer { }
-
 ```
 <!-- 
     class EventDispatcher {
