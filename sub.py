@@ -2,6 +2,21 @@ import random
 import stripe
 import datetime
 
+def get_next_period_first_day(period: int) -> int:
+    ## Current date
+    now = datetime.datetime.now()
+
+    # year and month after {period} of month
+    additional_years, next_month = divmod(now.month - 1 + period, 12)
+    next_month_year = now.year + additional_years
+    next_month += 1
+
+    next_period_first_day = datetime.datetime(next_month_year, next_month, 1)
+
+    # transform into timestamp
+    next_period_first_day_timestamp = int(next_period_first_day.timestamp())
+    return next_period_first_day_timestamp
+
 
 def get_next_month_timestamp(next_day: int) -> int: 
     ## 當前日期
@@ -27,6 +42,7 @@ stripe.api_key = "sk_test_51OZTUEBFkLqjc7QTFXwxu3Me4oCgklY5DLs5jqAUEkYky5e4VBfyA
 
 secret_key = "sk_test_51OZTUEBFkLqjc7QTFXwxu3Me4oCgklY5DLs5jqAUEkYky5e4VBfyAE5FHpp99Kc8RUqOlxvoHGDRtDHOJAnhFvGJ00YkqrxM0U"
 stripe.api_key = secret_key
+stripe.api_key = "sk_test_51OOxrkHUX1GxVLtdNFSqrQiwofWKURdHOAYi9zoldTwit7Js4uUJpnWVR0TwVYCy4ubr9slddAneNrPp7BDerm2W00D2pMsRq2"
 
 
 
@@ -41,10 +57,15 @@ milk_every_day_10usd = "price_1OetlBBFkLqjc7QTKBD9TDFO"
 milk_every_day_20usd = "plan_PacHbLUFAr6vX7"
 milk_every_4day_10usd = "plan_PacNQZGwSprCnS"
 milk_every_month_100usd = "price_1OlShNBFkLqjc7QTcBirlV2I"
-using_price = formal_every_month_100usd
+milk_every_6_month_100usd = "price_1OkMyxBFkLqjc7QTSUA15pIY"
+using_price = milk_every_6_month_100usd
 henry_customer_id = "cus_PZV6GO3wuec92B"
 
 single_day_fee_product = "prod_Paxo32goteCcK3"
+
+
+me = "cus_PeOoJ0HwMZJzgx"
+henry_customer_id = me
 
 me = stripe.Customer.retrieve(henry_customer_id)
 print(me)
@@ -91,7 +112,11 @@ print(me)
 # subscription
 
 
+
 me.stripe_account
+
+
+using_price = "price_1OpKixHUX1GxVLtdA9UXqpHN"
 
 
 idp_key = f"omg-mooo-{random.randint(1, 10000000)}"
@@ -117,7 +142,8 @@ checkout_session = stripe.checkout.Session.create(
             mode='subscription',
             subscription_data={
                 # "trial_period_days": 2,
-                "billing_cycle_anchor": get_next_month_timestamp(1),
+                "billing_cycle_anchor": get_next_period_first_day(6),
+                # "billing_cycle_anchor": get_next_month_timestamp(1),
                 # "billing_cycle_anchor": int(round( (datetime.datetime.now() + datetime.timedelta(days=5)).timestamp() )),
                 "description": "YOOOOO - " + idp_key
             },
@@ -129,6 +155,16 @@ checkout_session = stripe.checkout.Session.create(
 
 
 print(checkout_session.url)
+x = datetime.datetime.now().timestamp()
+print(x)
+print(get_next_period_first_day(6))
+print(100 * datetime.datetime.now().timestamp() / get_next_period_first_day(6))
+
+
+
+print(100 * ((get_next_period_first_day(6) - datetime.datetime.now().timestamp())) / ( 184 * 24 * 3600 )  )
+
+
 
 # # 创建订阅时添加一次性费用
 # subscription = stripe.Subscription.create(

@@ -206,6 +206,11 @@ class Webhook(View):
 
 
         print(f"處理 {event['type']} 事件中...!")
+
+
+        if event["type"] == "customer.subscription.updated":
+            print(event)
+
         # Handle the event
         if event['type'] == 'payment_intent.succeeded':
             payment_intent = event['data']['object']

@@ -13,28 +13,29 @@ sequenceDiagram
     ui ->> api: 選擇不同方案訂閱按鈕按下後 <br> 打 API 到後端
     api ->> ui: 回傳 PG Callback Endpoint & <br>subscription 相關資訊 ( ex: Pricing Plan's lookup key )
 
-    ui ->>+ pg: *SyncPost* with Transaction ID with Subscription Information
-    Note right of pg: 記下 transaction id  redis 中
+    ui ->>+ pg: *SyncPost* with Subscription Information
+    Note right of pg: 產生並記下 transaction id  redis 中
     pg ->> stripe: 使用 Checkout.session.create 建立 Stripe Host Checkout 畫面
     stripe ->> pg: 回傳 checkout.url
 
     PAR pg to ui
         pg ->>- ui: pg 回傳 checkout.url
     and pg to api
-        pg ->> api: pg 以 Domain Event 通知 API
+        pg ->> api: pg 以 CloudEvent 通知 Pare-Eventing
     end
 
     ui -->>+ stripe: redirect to Stripe 付款
 
     PAR 使用者付款後的結果
         alt  成功
+            Note right of pg: 去除 redis 中的 transaction id
             stripe -->> ui: redirect 至成功畫面
         else 失敗
+            Note right of pg: 去除 redis 中的 transaction id
             stripe -->>- ui: redirect 至取消畫面
         end
     and 
         stripe ->> pg: Stripe 通過 Webhook 非同步通知 Payment Gateway
-        Note right of pg: 去除 redis 中的 transaction id
     end
 ```
 
@@ -87,7 +88,9 @@ sequenceDiagram
 ```mermaid
 stateDiagram-v2
 
-    [*] --> SubscriptionCreated: "customer.subscription.created"
+    [*] --> Initial: 
+    
+    Initial --> SubscriptionCreated: "customer.subscription.created"
 
     SubscriptionCreated --> InvoiceCreated: "invoice.created"
 
@@ -97,10 +100,19 @@ stateDiagram-v2
     PaymentFailed --> PaymentPaid: "invoice.payment_succeeded"
     PaymentFailed --> PaymentFailed: retry and failed again <br>"invoice.payment_failed"
 
-    % 再次訂閱
+    %% 再次訂閱
     PaymentPaid --> InvoiceCreated : 下一週期"invoice.created"
 
-    PaymentPaid --> SubscriptionDeleted : "customer.subscription.deleted"
+    %% 取消續訂
+    PaymentPaid --> SubscriptionCanceled: "customer.subscription.updated" <br> ( canceled_at != null && previous_attributes.canceled_at == null )
+
+    %% 續訂
+    SubscriptionCanceled --> PaymentPaid: "customer.subscription.updated" <br> ( canceled_at == null && previous_attributes.canceled_at != null )
+
+    %% 取消續訂後過期
+    SubscriptionCanceled --> SubscriptionDeleted : "customer.subscription.deleted"
+
+    %% 終止條件
     SubscriptionDeleted --> [*]
 ```
 
@@ -139,20 +151,6 @@ classDiagram
     StateBase <|-- PaymentPaidState
     StateBase <|-- SubscriptionDeletedState
 
-
-    StateTransitEvent <|-- CustomerSubscriptionCreatedEvent
-    StateTransitEvent <|-- InvoiceCreatedEvent
-    StateTransitEvent <|-- ChargeSucceededEvent
-    StateTransitEvent <|-- InvoicePaymentFailedEvent
-    StateTransitEvent <|-- InvoicePaymentSucceededEvent
-
-
-    EventHandler <|-- CustomerSubscriptionCreatedStrategy
-    EventHandler <|-- InvoiceCreatedStrategy
-    EventHandler <|-- ChargeSucceededStrategy
-    EventHandler <|-- InvoicePaymentFailedStrategy
-    EventHandler <|-- InvoicePaymentSucceededStrategy
-
     EventHandler o-- DababaseService
     EventHandler o-- PareEventingService
     EventHandler o-- JWTIssuer
@@ -160,68 +158,63 @@ classDiagram
     
     StripePaymentService o-- DababaseService
     StripePaymentService o-- StateRegistry
-    StateRegistry *-- StateBase
-    StateBase *-- EventHandler
-    StateBase *-- StateTransitEvent
     
 
 
     %%%%%%% 物件定義
-    
-    class PaymentService {
+
+    %% 負責處理 Payment Webhook 事件的物件
+    class PaymentGatewayWebhookHandler {
+        <<interface>>
+        +handle_webhook(event: Dict)
+    }
+
+    %% 負責處理與 Payment Service Provider 溝通的實際服務 ( infra 層的 )
+    class PaymentRepository {
         <<interface>>
         +GetCustomer()
         +CreateCustomer()
         +GetSubscription()
         +CreateSubscription()
-        +GetInvoice()
+        +GetInvoice(invoice_id: str)
         +GetInvoicesList()
         +CreateInvoice()
     }
-
-    class StripePaymentService { }
-
-    class StateRegistry {
-        -handled_states
-        +__getitem__()
-        +__setitem__()
+    class StripePaymentRepository {
+        +GetCustomerPortalURL()
+        +CreateCustomerPortalURL()
     }
 
 
-    %% Event Handler： 封裝了怎麼處理該次 Event 的發生
-    class EventHandler { 
-        <<interface>>
-        -handled_states
-        +handle_event(event: Type~EventBase~)
+
+    class StateMachine {
+        -handled_states: dict[str, StateBase]
+        +handle_event(event: Dict)
     }
-    class CustomerSubscriptionCreatedStrategy { }
-    class InvoiceCreatedStrategy { }
-    class ChargeSucceededStrategy { }
-    class InvoicePaymentFailedStrategy { }
-    class InvoicePaymentSucceededStrategy { }
 
 
     class StateBase {
         <<interface>>
-        +from_event(event: dict) Self
+        +handle_event(event: Dict)
     }
-    class SubscriptionCreatedState { }
-    class InvoiceCreatedState { }
-    class PaymentFailedState { }
-    class PaymentPaidState { }
-    class SubscriptionDeletedState { }
+    class StripeSubscriptionCreatedState {
+        +invoice_created()
+    }
+    class StripeInvoiceCreatedState {
+        +invoice_payment_failed()
+        +invoice_payment_succeeded()
+    }
+    class StripePaymentFailedState {
+        +invoice_payment_failed()
+        +invoice_payment_succeeded()
+    }
+    class StripePaymentPaidState {
+        +invoice_created()
+        +customer_subscription_deleted()
+    }
+    class StripeSubscriptionDeletedState { }
 
 
-    %% 這些都是 Stripe Event Dataclass，會導致訂閱的狀態轉換
-    class StateTransitEvent {
-        <<Abstract>>
-        +from_event(raw_event: dict)
-    }
-    class CustomerSubscriptionCreatedEvent { }
-    class InvoiceCreatedEvent { }
-    class ChargeSucceededEvent { }
-    class InvoicePaymentFailedEvent { }
-    class InvoicePaymentSucceededEvent { }
 
     %% 用於資料庫存放的字串
     class StateEnum {
@@ -289,7 +282,7 @@ sequenceDiagram
 ---
 
 之後要 publish 到 pare-eventing 的時候要放 token
-因此要嘛用前端帶的 access_token 要嘛用 jwt_issuerl.issue 產的 token
+因此要嘛用前端帶的 access_token 要嘛用 jwt_issuer.issue 產的 token
 
 
 這邊可以看到 jwt_issuer.issue 發 token 的方法
