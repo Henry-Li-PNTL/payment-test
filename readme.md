@@ -256,7 +256,7 @@ classDiagram
         PaymentPaid
         SubscriptionDeleted
     }
-
+｀
 
     %% 原本就存在的物件
     %% Container 中的 SharedContainer 中的 database
