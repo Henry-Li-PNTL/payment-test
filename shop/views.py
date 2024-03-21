@@ -207,8 +207,15 @@ class Webhook(View):
 
         print(f"處理 {event['type']} 事件中...!")
 
+        import json
+        with open("events/{event['type']}.json", "w", encoding="utf-8") as f:
+            json.dump(event, f)
 
-        if event["type"] == "customer.subscription.updated":
+
+        if event["type"] in [
+            "customer.subscription.updated",
+            "customer.subscription.created"
+        ]:
             print(event)
 
         # Handle the event
