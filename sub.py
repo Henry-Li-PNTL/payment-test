@@ -42,7 +42,6 @@ stripe.api_key = "sk_test_51OZTUEBFkLqjc7QTFXwxu3Me4oCgklY5DLs5jqAUEkYky5e4VBfyA
 
 secret_key = "sk_test_51OZTUEBFkLqjc7QTFXwxu3Me4oCgklY5DLs5jqAUEkYky5e4VBfyAE5FHpp99Kc8RUqOlxvoHGDRtDHOJAnhFvGJ00YkqrxM0U"
 stripe.api_key = secret_key
-stripe.api_key = "sk_test_51OOxrkHUX1GxVLtdNFSqrQiwofWKURdHOAYi9zoldTwit7Js4uUJpnWVR0TwVYCy4ubr9slddAneNrPp7BDerm2W00D2pMsRq2"
 
 
 
@@ -67,7 +66,11 @@ single_day_fee_product = "prod_Paxo32goteCcK3"
 me = "cus_PeOoJ0HwMZJzgx"
 henry_customer_id = me
 
-me = stripe.Customer.retrieve(henry_customer_id)
+
+email = "qqqqqq@gmail.com"
+me = stripe.Customer.create(email=email)
+
+# me = stripe.Customer.retrieve(me)
 print(me)
 
 # 添加支付方式
@@ -116,14 +119,14 @@ print(me)
 me.stripe_account
 
 
-using_price = "price_1OpKixHUX1GxVLtdA9UXqpHN"
+using_price = "price_1OkMyxBFkLqjc7QTSUA15pIY"
 
 
 idp_key = f"omg-mooo-{random.randint(1, 10000000)}"
 DOMAIN = "http://127.0.0.1:8000"
 checkout_session = stripe.checkout.Session.create(
             stripe_account=me.stripe_account,
-            customer_email=me.email,
+            customer=me.id,
             idempotency_key=idp_key,
             line_items=[
                 {

@@ -208,7 +208,7 @@ class Webhook(View):
         print(f"處理 {event['type']} 事件中...!")
 
         import json
-        with open("events/{event['type']}.json", "w", encoding="utf-8") as f:
+        with open(f"events/{event['type']}.json", "w", encoding="utf-8") as f:
             json.dump(event, f)
 
 
